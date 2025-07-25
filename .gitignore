@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data files (optional - uncomment if you don't want to track data)
+# data/*.parquet
+
+# Docker
+.dockerignore
+
+# Temporary files
+tmp/
+*.tmp
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
