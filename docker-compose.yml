@@ -1,13 +1,9 @@
-version: "3"
 services:
-  plasma-store:
+  flight:
     build: .
-    container_name: plasma-store
-    shm_size: "4gb"
-    environment:
-      - PARQUET_PATH=/home/$USER/features/EURUSD.parquet
+    ports:
+      - "8815:8815"
     volumes:
       - ./data:/data
-      - ./tmp:/tmp/plasma
-      - /dev/shm:/dev/shm
-    restart: unless-stopped
+    environment:
+      - PARQUET_PATH=/home/$USER/features/EURUSD.parquet

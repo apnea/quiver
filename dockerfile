@@ -1,13 +1,8 @@
 FROM python:3.11-slim
 
-# Install dependencies
-RUN pip install pandas pyarrow
+RUN pip install pandas pyarrow==12.0.1
 
-# Create directory for Plasma socket
-RUN mkdir -p /tmp/plasma
+COPY flight_server.py /app/flight_server.py
+WORKDIR /app
 
-# Add script
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["python", "flight_server.py"]
