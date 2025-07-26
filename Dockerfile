@@ -1,10 +1,24 @@
 FROM python:3.11-slim
 
-WORKDIR /app
+# Install system updates and security patches
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install --no-install-recommends -y build-essential && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+# Create a non-root user
+RUN useradd -m appuser
+USER appuser
+
+# Set working directory
+WORKDIR /home/appuser/app
+
+# Copy requirements and install dependencies
+COPY --chown=appuser:appuser requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY flight_server.py .
+# Copy the rest of your code
+COPY --chown=appuser:appuser . .
 
-CMD ["python3", "flight_server.py"]
+# Set entrypoint or command as needed
+CMD ["python", "main.py"]

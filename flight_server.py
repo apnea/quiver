@@ -1,7 +1,6 @@
 import os
 import signal
 import threading
-import pyarrow as pa
 import pyarrow.parquet as pq
 import pyarrow.flight as flight
 
