@@ -31,18 +31,19 @@ Quiver provides a simple, containerized in-memory data service using Apache Arro
     
     **Method 1: Environment variable in command**
     ```bash
-    PARQUET_FILENAME=some_file.parquet docker compose up --build
+    PARQUET_FILENAME=EURUSD.parquet docker compose up --build
     ```
     
     **Method 2: Edit the .env file**
     ```bash
-    echo "PARQUET_FILENAME=some_file.parquet" > .env
+    echo "PARQUET_FILENAME=EURUSD.parquet" > .env
     docker compose up --build
     ```
     
-    **Method 3: Override with docker-compose**
+    **Method 3: Using export (for multiple commands)**
     ```bash
-    docker compose up --build -e PARQUET_FILENAME=some_file.parquet
+    export PARQUET_FILENAME=EURUSD.parquet
+    docker compose up --build
     ```
     
     The server will start, load the initial data, and listen on port `8815`. The data will be accessible both by its filename (without extension) and as "default" for backward compatibility.
