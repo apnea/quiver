@@ -1,53 +1,48 @@
 # quiver
-## a container of Apache arrows
+- An Apache Arrow Flight Server
 
-- the purpose of this project is to provide an in memory data store that provide SOTA read speed for data sets
-- can be run as a Flight server in Docker, and clients can connect remotely or locally
-- compatible with latest PyArrow
-- supports zero-copy, efficient streaming of Arrow tables and RecordBatches
-
-## Quick Start
-
-### Local Development
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Start the server
-python3 flight_server.py
-
-# In another terminal, run the client
-python3 client.py
-
-# Run tests
-python3 test_server.py
-```
-
-### Docker Deployment
-```bash
-# Build and run with docker-compose
-docker-compose up --build
-
-# Or build and run manually
-docker build -t quiver .
-docker run -p 8815:8815 -v ./data:/data quiver
-```
+Quiver provides a simple, containerized in-memory data service using Apache Arrow Flight. It allows clients to efficiently upload (`do_put`) and download (`do_get`) Arrow data tables over gRPC.
 
 ## Features
-- In-memory Arrow data storage with fast access
-- Flight protocol for efficient data transfer
-- Sample data generation if no parquet file provided
-- Error handling and graceful degradation
-- Docker support with volume mounting
 
-## Data Format
-Place your parquet files in the `data/` directory. The server will load `/data/example.parquet` by default, or you can specify a custom path with the `PARQUET_PATH` environment variable.
+-   **High-Performance I/O**: Built on Arrow Flight for fast, network-efficient data transfer.
+-   **In-Memory Cache**: Holds Arrow Tables in memory for low-latency access.
+-   **Dockerized**: Easy to deploy and run using Docker and Docker Compose.
+-   **Initial Data Loading**: Can automatically load a Parquet file into memory on startup.
 
-## Fixed Issues
-- ✅ Syntax error in flight_server.py
-- ✅ Added proper error handling for missing data files
-- ✅ Fixed Docker port exposure
-- ✅ Corrected docker-compose environment variables
-- ✅ Added requirements.txt for local development
-- ✅ Enhanced client with better error handling
-- ✅ Created sample test data
+## Getting Started
+
+### Prerequisites
+
+-   Docker and Docker Compose
+
+### Running the Server
+
+1.  **Place your data:** Create a `data` directory in the project root and place your Parquet files inside it (e.g., `data/EURUSD.parquet`, `data/other_data.parquet`).
+
+2.  **Build and run the container:**
+
+    You can run it with the default file (`EURUSD.parquet`):
+    ```bash
+    docker-compose up --build
+    ```
+
+    Or, you can specify a different file at runtime by setting the `PARQUET_FILENAME` environment variable:
+    ```bash
+    PARQUET_FILENAME=other_data.parquet docker-compose up --build
+    ```
+    The server will start, load the initial data, and listen on port `8815`.
+
+### Using the Python Client
+
+You can use the provided `client.py` to interact with the server. Ensure you have `pyarrow` installed in your local environment (`pip install pyarrow`).
+
+The client demonstrates how to:
+-   Fetch a table from the server.
+-   Upload a new table to the server.
+
+```bash
+python3 client.py
+```
+
+The client is configured to connect to `localhost:8815` and interact with a table named `default`. You can modify it to use different table names (paths).

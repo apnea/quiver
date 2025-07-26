@@ -1,64 +1,78 @@
 import os
-import pandas as pd
+import signal
+import threading
 import pyarrow as pa
+import pyarrow.parquet as pq
 import pyarrow.flight as flight
 
-PARQUET_PATH = os.environ.get("PARQUET_PATH", "/data/example.parquet")
-
-# Load table with error handling
-def load_table():
-    try:
-        if os.path.exists(PARQUET_PATH):
-            print(f"Loading parquet file from: {PARQUET_PATH}")
-            return pa.Table.from_pandas(pd.read_parquet(PARQUET_PATH))
-        else:
-            print(f"Parquet file not found at {PARQUET_PATH}, creating sample data")
-            # Create sample data if file doesn't exist
-            sample_df = pd.DataFrame({
-                'id': [1, 2, 3, 4, 5],
-                'name': ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'],
-                'value': [10.5, 20.3, 30.1, 40.8, 50.2]
-            })
-            return pa.Table.from_pandas(sample_df)
-    except Exception as e:
-        print(f"Error loading data: {e}")
-        print("Creating empty sample table")
-        sample_df = pd.DataFrame({'error': ['Failed to load data']})
-        return pa.Table.from_pandas(sample_df)
-
-TABLE = load_table()
-
 class InMemoryFlightServer(flight.FlightServerBase):
-    def __init__(self, location):
+    def __init__(self, host="0.0.0.0", port=8815, initial_parquet_path=None):
+        location = f"grpc://{host}:{port}"
         super().__init__(location)
-        self.tables = {"default": TABLE}
+        self._location = location
+        self._tables = {}
+        self._lock = threading.Lock()
+
+        if initial_parquet_path and os.path.exists(initial_parquet_path):
+            print(f"Loading initial data from {initial_parquet_path}")
+            try:
+                table = pq.read_table(initial_parquet_path)
+                # Use the filename without extension as the table name
+                table_name = os.path.splitext(os.path.basename(initial_parquet_path))[0]
+                self._tables[table_name] = table
+                print(f"Loaded table '{table_name}' with {table.num_rows} rows.")
+            except Exception as e:
+                print(f"Error loading initial Parquet file: {e}")
+        else:
+            print("No initial Parquet file found or specified. Starting with an empty server.")
 
     def list_flights(self, context, criteria):
-        descriptor = flight.FlightDescriptor.for_path("default")
-        endpoint = flight.FlightEndpoint(b"default", ["grpc://0.0.0.0:8815"])
-        return [flight.FlightInfo(self.tables["default"].schema, descriptor, [endpoint], 
-                                self.tables["default"].num_rows, -1)]
+        with self._lock:
+            for name, table in self._tables.items():
+                descriptor = flight.FlightDescriptor.for_path(name)
+                yield flight.FlightInfo(table.schema, descriptor, [], table.num_rows, -1)
 
     def get_flight_info(self, context, descriptor):
-        endpoint = flight.FlightEndpoint(b"default", ["grpc://0.0.0.0:8815"])
-        return flight.FlightInfo(self.tables["default"].schema, descriptor, [endpoint], 
-                               self.tables["default"].num_rows, -1)
+        path = descriptor.path[0].decode('utf-8')
+        with self._lock:
+            if path in self._tables:
+                table = self._tables[path]
+                return flight.FlightInfo(table.schema, descriptor, [], table.num_rows, -1)
+        raise flight.FlightUnavailableError(f"Unknown table: {path}")
 
     def do_get(self, context, ticket):
-        # ticket should be "default" but let's be flexible
-        return flight.RecordBatchStream(self.tables["default"])
+        path = ticket.ticket.decode('utf-8')
+        with self._lock:
+            if path in self._tables:
+                return flight.RecordBatchStream(self._tables[path])
+        raise flight.FlightUnavailableError(f"Unknown table: {path}")
 
     def do_put(self, context, descriptor, reader, writer):
-        self.tables["default"] = reader.read_all()
+        path = descriptor.path[0].decode('utf-8')
+        table = reader.read_all()
+        with self._lock:
+            self._tables[path] = table
+        print(f"Stored table '{path}' with {table.num_rows} rows.")
+
+    def serve(self):
+        print(f"Starting Flight server at {self._location}")
+        super().serve()
+
+    def shutdown(self):
+        print("Shutting down Flight server...")
+        super().shutdown()
+
+def main():
+    parquet_path = os.environ.get("PARQUET_PATH")
+    server = InMemoryFlightServer(initial_parquet_path=parquet_path)
+
+    def handle_shutdown(signum, frame):
+        server.shutdown()
+
+    signal.signal(signal.SIGINT, handle_shutdown)
+    signal.signal(signal.SIGTERM, handle_shutdown)
+
+    server.serve()
 
 if __name__ == "__main__":
-    server = InMemoryFlightServer("grpc://0.0.0.0:8815")
-    print(f"Starting Arrow Flight server on grpc://0.0.0.0:8815")
-    print(f"Loading data from: {PARQUET_PATH}")
-    try:
-        server.serve()
-    except KeyboardInterrupt:
-        print("Server shutting down...")
-    except Exception as e:
-        print(f"Server error: {e}")
-        raise
+    main()
