@@ -20,5 +20,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of your code
 COPY --chown=appuser:appuser . .
 
+# Make entrypoint script executable
+RUN chmod +x entrypoint.sh
+
 # Set entrypoint or command as needed
-CMD ["python", "main.py"]
+ENTRYPOINT ["./entrypoint.sh"]

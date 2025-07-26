@@ -13,7 +13,7 @@ def test_server():
     
     # Set environment variable to load test data
     env = os.environ.copy()
-    env['PARQUET_PATH'] = 'data/example.parquet'
+    env['PARQUET_PATH'] = 'data/EURUSD.parquet'
     
     # Start the server in background
     server_process = subprocess.Popen([sys.executable, "flight_server.py"], env=env)

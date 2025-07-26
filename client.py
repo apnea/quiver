@@ -10,10 +10,11 @@ def main():
         flights = list(client.list_flights())
         print(f"Available tables: {[f.descriptor.path[0].decode() for f in flights]}")
 
-        # 📥 Fetch table from server (using "default" table)
+        # Fetch table from server (using "default" table)
         try:
             info = client.get_flight_info(flight.FlightDescriptor.for_path("default"))
-            reader = client.do_get(info.endpoints[0].ticket)
+            ticket = flight.Ticket("default".encode())
+            reader = client.do_get(ticket)
             table = reader.read_all()
 
             print("Fetched table from 'default':")
@@ -21,7 +22,7 @@ def main():
         except flight.FlightUnavailableError:
             print("No 'default' table found. Server may be empty.")
 
-        # 📤 Upload new table (overwrite)
+        # Upload new table (overwrite)
         new_table = pa.table({"x": [10, 20, 30], "y": ["a", "b", "c"]})
         writer, _ = client.do_put(flight.FlightDescriptor.for_path("default"), new_table.schema)
         writer.write_table(new_table)

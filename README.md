@@ -18,18 +18,31 @@ Quiver provides a simple, containerized in-memory data service using Apache Arro
 
 ### Running the Server
 
-1.  **Place your data:** Create a `data` directory in the project root and place your Parquet files inside it (e.g., `data/example.parquet`, `data/EURUSD.parquet`, `data/other_data.parquet`).
+1.  **Place your data:** Create a `data` directory in the project root and place your Parquet files inside it (e.g., `data/EURUSD.parquet`, `data/other_data.parquet`).
 
 2.  **Build and run the container:**
 
-    You can run it with the default file (`example.parquet`):
+    You can run it with the default file (`some_file.parquet`):
     ```bash
     docker compose up --build
     ```
 
-    Or, you can specify a different file at runtime by setting the `PARQUET_FILENAME` environment variable:
+    Or, you can specify a different file at runtime using any of these methods:
+    
+    **Method 1: Environment variable in command**
     ```bash
-    PARQUET_FILENAME=EURUSD.parquet docker compose up --build
+    PARQUET_FILENAME=some_file.parquet docker compose up --build
+    ```
+    
+    **Method 2: Edit the .env file**
+    ```bash
+    echo "PARQUET_FILENAME=some_file.parquet" > .env
+    docker compose up --build
+    ```
+    
+    **Method 3: Override with docker-compose**
+    ```bash
+    docker compose up --build -e PARQUET_FILENAME=some_file.parquet
     ```
     
     The server will start, load the initial data, and listen on port `8815`. The data will be accessible both by its filename (without extension) and as "default" for backward compatibility.
