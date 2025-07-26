@@ -1,3 +1,7 @@
+# data
+*.hdf?
+*.parquet
+
 # Python
 __pycache__/
 *.py[cod]
