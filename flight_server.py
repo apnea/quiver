@@ -4,6 +4,7 @@ import threading
 import sys
 import pyarrow.parquet as pq
 import pyarrow.flight as flight
+import time
 
 # Ensure stdout/stderr are unbuffered for Docker logs
 sys.stdout.reconfigure(line_buffering=True)
@@ -24,13 +25,17 @@ class InMemoryFlightServer(flight.FlightServerBase):
         if initial_parquet_path and os.path.exists(initial_parquet_path):
             log_message(f"Loading initial data from {initial_parquet_path}")
             try:
+                start_time = time.time()
                 table = pq.read_table(initial_parquet_path)
+                end_time = time.time()
+                transfer_time = end_time - start_time
+                
                 # Use the filename without extension as the table name
                 table_name = os.path.splitext(os.path.basename(initial_parquet_path))[0]
                 self._tables[table_name] = table
                 # Also store as "default" for backward compatibility
                 self._tables["default"] = table
-                log_message(f"Loaded table '{table_name}' with {table.num_rows} rows.")
+                log_message(f"Loaded table '{table_name}' with {table.num_rows} rows and {table.num_columns} columns in {transfer_time:.3f} seconds for a total of {table.nbytes / (1024 * 1024):.2f} MB.")
                 log_message(f"Table is accessible as both '{table_name}' and 'default'")
             except Exception as e:
                 log_message(f"Error loading initial Parquet file: {e}")

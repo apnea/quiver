@@ -13,7 +13,7 @@ def main():
 
         # Fetch table from server (using "default" table)
         try:
-            info = client.get_flight_info(flight.FlightDescriptor.for_path("default"))
+            # info = client.get_flight_info(flight.FlightDescriptor.for_path("default"))
             ticket = flight.Ticket("default".encode())
             reader = client.do_get(ticket)
             
