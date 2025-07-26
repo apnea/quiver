@@ -1,6 +1,11 @@
 import pyarrow as pa
 import pyarrow.flight as flight
+import pandas as pd
 import time
+
+print("Pandas version:", pd.__version__)
+print("PyArrow version:", pa.__version__)
+
 
 def main():
     try:
@@ -27,22 +32,28 @@ def main():
             columns = len(table.schema)
             data_size_mb = table.nbytes / (1024 * 1024)
             
-            print(f"✅ Data transfer completed in {transfer_time:.3f} seconds")
-            print(f"   📊 Rows: {rows:,}, Columns: {columns}, Size: {data_size_mb:.2f} MB")
-            print(f"   🚀 Transfer rate: {data_size_mb/transfer_time:.2f} MB/s")
+            print(f"Data transfer completed in {transfer_time:.3f} seconds")
+            print(f"Rows: {rows:,}, Columns: {columns}, Size: {data_size_mb:.2f} MB")
+            print(f"Transfer rate: {data_size_mb/transfer_time:.2f} MB/s")
             print()
             print("Fetched table from 'default':")
-            print(table.to_pandas())
+
+            start_time = time.time()
+            df = table.to_pandas()
+            end_time = time.time()
+            transfer_time = end_time - start_time
+            print(df)
+            print(f"Data to_pandas() completed in {transfer_time:.3f} seconds")
+
         except flight.FlightUnavailableError:
             print("No 'default' table found. Server may be empty.")
 
         # Upload new table (overwrite)
-        new_table = pa.table({"x": [10, 20, 30], "y": ["a", "b", "c"]})
-        writer, _ = client.do_put(flight.FlightDescriptor.for_path("default"), new_table.schema)
-        writer.write_table(new_table)
-        writer.close()
-
-        print("Uploaded new table to 'default'.")
+        # new_table = pa.table({"x": [10, 20, 30], "y": ["a", "b", "c"]})
+        # writer, _ = client.do_put(flight.FlightDescriptor.for_path("default"), new_table.schema)
+        # writer.write_table(new_table)
+        # writer.close()
+        # print("Uploaded new table to 'default'.")
         
     except flight.FlightServerError as e:
         print(f"Flight server error: {e}")
