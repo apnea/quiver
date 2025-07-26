@@ -37,9 +37,10 @@ def main():
             print(f"Transfer rate: {data_size_mb/transfer_time:.2f} MB/s")
             print()
             print("Fetched table from 'default':")
+            print("Schema:", table.schema)
 
             start_time = time.time()
-            df = table.to_pandas()
+            df = table.to_pandas(use_threads=True)
             end_time = time.time()
             transfer_time = end_time - start_time
             print(df)
