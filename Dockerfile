@@ -13,6 +13,10 @@ USER appuser
 # Set working directory
 WORKDIR /home/appuser/app
 
+# Set Python to run in unbuffered mode for better Docker logging
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONIOENCODING=UTF-8
+
 # Copy requirements and install dependencies
 COPY --chown=appuser:appuser requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

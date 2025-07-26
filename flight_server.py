@@ -1,8 +1,17 @@
 import os
 import signal
 import threading
+import sys
 import pyarrow.parquet as pq
 import pyarrow.flight as flight
+
+# Ensure stdout/stderr are unbuffered for Docker logs
+sys.stdout.reconfigure(line_buffering=True)
+sys.stderr.reconfigure(line_buffering=True)
+
+def log_message(message):
+    """Print message with explicit flush for Docker logs"""
+    print(message, flush=True)
 
 class InMemoryFlightServer(flight.FlightServerBase):
     def __init__(self, host="0.0.0.0", port=8815, initial_parquet_path=None):
@@ -13,7 +22,7 @@ class InMemoryFlightServer(flight.FlightServerBase):
         self._lock = threading.Lock()
 
         if initial_parquet_path and os.path.exists(initial_parquet_path):
-            print(f"Loading initial data from {initial_parquet_path}")
+            log_message(f"Loading initial data from {initial_parquet_path}")
             try:
                 table = pq.read_table(initial_parquet_path)
                 # Use the filename without extension as the table name
@@ -21,12 +30,12 @@ class InMemoryFlightServer(flight.FlightServerBase):
                 self._tables[table_name] = table
                 # Also store as "default" for backward compatibility
                 self._tables["default"] = table
-                print(f"Loaded table '{table_name}' with {table.num_rows} rows.")
-                print(f"Table is accessible as both '{table_name}' and 'default'")
+                log_message(f"Loaded table '{table_name}' with {table.num_rows} rows.")
+                log_message(f"Table is accessible as both '{table_name}' and 'default'")
             except Exception as e:
-                print(f"Error loading initial Parquet file: {e}")
+                log_message(f"Error loading initial Parquet file: {e}")
         else:
-            print("No initial Parquet file found or specified. Starting with an empty server.")
+            log_message("No initial Parquet file found or specified. Starting with an empty server.")
 
     def list_flights(self, context, criteria):
         with self._lock:
@@ -54,14 +63,14 @@ class InMemoryFlightServer(flight.FlightServerBase):
         table = reader.read_all()
         with self._lock:
             self._tables[path] = table
-        print(f"Stored table '{path}' with {table.num_rows} rows.")
+        log_message(f"Stored table '{path}' with {table.num_rows} rows.")
 
     def serve(self):
-        print(f"Starting Flight server at {self._location}")
+        log_message(f"Starting Flight server at {self._location}")
         super().serve()
 
     def shutdown(self):
-        print("Shutting down Flight server...")
+        log_message("Shutting down Flight server...")
         super().shutdown()
 
 def main():

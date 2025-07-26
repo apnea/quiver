@@ -1,5 +1,6 @@
 import pyarrow as pa
 import pyarrow.flight as flight
+import time
 
 def main():
     try:
@@ -15,8 +16,21 @@ def main():
             info = client.get_flight_info(flight.FlightDescriptor.for_path("default"))
             ticket = flight.Ticket("default".encode())
             reader = client.do_get(ticket)
+            
+            print("Starting data transfer...")
+            start_time = time.time()
             table = reader.read_all()
-
+            end_time = time.time()
+            
+            transfer_time = end_time - start_time
+            rows = table.num_rows
+            columns = len(table.schema)
+            data_size_mb = table.nbytes / (1024 * 1024)
+            
+            print(f"✅ Data transfer completed in {transfer_time:.3f} seconds")
+            print(f"   📊 Rows: {rows:,}, Columns: {columns}, Size: {data_size_mb:.2f} MB")
+            print(f"   🚀 Transfer rate: {data_size_mb/transfer_time:.2f} MB/s")
+            print()
             print("Fetched table from 'default':")
             print(table.to_pandas())
         except flight.FlightUnavailableError:
