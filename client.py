@@ -6,13 +6,20 @@ def main():
         client = flight.connect("grpc://localhost:8815")
         print("Connected to Flight server")
 
-        # 📥 Fetch table from server
-        info = client.get_flight_info(flight.FlightDescriptor.for_path("default"))
-        reader = client.do_get(info.endpoints[0].ticket)
-        table = reader.read_all()
+        # List available flights/tables
+        flights = list(client.list_flights())
+        print(f"Available tables: {[f.descriptor.path[0].decode() for f in flights]}")
 
-        print("Fetched table:")
-        print(table.to_pandas())
+        # 📥 Fetch table from server (using "default" table)
+        try:
+            info = client.get_flight_info(flight.FlightDescriptor.for_path("default"))
+            reader = client.do_get(info.endpoints[0].ticket)
+            table = reader.read_all()
+
+            print("Fetched table from 'default':")
+            print(table.to_pandas())
+        except flight.FlightUnavailableError:
+            print("No 'default' table found. Server may be empty.")
 
         # 📤 Upload new table (overwrite)
         new_table = pa.table({"x": [10, 20, 30], "y": ["a", "b", "c"]})
@@ -20,7 +27,7 @@ def main():
         writer.write_table(new_table)
         writer.close()
 
-        print("Uploaded new table.")
+        print("Uploaded new table to 'default'.")
         
     except flight.FlightServerError as e:
         print(f"Flight server error: {e}")

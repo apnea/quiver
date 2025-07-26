@@ -20,7 +20,10 @@ class InMemoryFlightServer(flight.FlightServerBase):
                 # Use the filename without extension as the table name
                 table_name = os.path.splitext(os.path.basename(initial_parquet_path))[0]
                 self._tables[table_name] = table
+                # Also store as "default" for backward compatibility
+                self._tables["default"] = table
                 print(f"Loaded table '{table_name}' with {table.num_rows} rows.")
+                print(f"Table is accessible as both '{table_name}' and 'default'")
             except Exception as e:
                 print(f"Error loading initial Parquet file: {e}")
         else:

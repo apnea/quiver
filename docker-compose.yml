@@ -6,4 +6,4 @@ services:
     volumes:
       - ./data:/data
     environment:
-      - PARQUET_PATH=/data/${PARQUET_FILENAME:-EURUSD.parquet}
+      - PARQUET_PATH=/data/${PARQUET_FILENAME:-example.parquet}

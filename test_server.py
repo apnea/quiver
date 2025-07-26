@@ -5,13 +5,18 @@ Test script to verify the Arrow Flight server works correctly
 import subprocess
 import time
 import sys
+import os
 import pyarrow.flight as flight
 
 def test_server():
     print("Starting Flight server test...")
     
+    # Set environment variable to load test data
+    env = os.environ.copy()
+    env['PARQUET_PATH'] = 'data/example.parquet'
+    
     # Start the server in background
-    server_process = subprocess.Popen([sys.executable, "flight_server.py"])
+    server_process = subprocess.Popen([sys.executable, "flight_server.py"], env=env)
     
     try:
         # Give server time to start
@@ -21,9 +26,15 @@ def test_server():
         client = flight.connect("grpc://localhost:8815")
         print("✅ Successfully connected to server")
         
+        # List available tables
+        flights = list(client.list_flights())
+        available_tables = [f.descriptor.path[0].decode() for f in flights]
+        print(f"✅ Available tables: {available_tables}")
+        
         # Test data retrieval
         info = client.get_flight_info(flight.FlightDescriptor.for_path("default"))
-        reader = client.do_get(info.endpoints[0].ticket)
+        ticket = flight.Ticket("default".encode())
+        reader = client.do_get(ticket)
         table = reader.read_all()
         
         print(f"✅ Retrieved table with {len(table)} rows and {len(table.schema)} columns")
